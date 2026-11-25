@@ -38,7 +38,7 @@ jobs:
           git clone --recursive --depth 1 https://github.com/heiher/hev-socks5-tunnel app/src/main/jni/hev-socks5-tunnel
           grep -n "LOCAL_MODULE\|BUILD_" app/src/main/jni/hev-socks5-tunnel/Android.mk || true
           grep -rn "TProxyService" app/src/main/jni/hev-socks5-tunnel/src/*.c || true
-          sed -i -E 's#hev/[A-Za-z0-9_/]*TProxyService#com/netthrottle/app/TProxy#g' app/src/main/jni/hev-socks5-tunnel/src/hev-jni.c
+          cp "$GITHUB_WORKSPACE/${{ env.PROJECT_DIR }}/native-overrides/hev-jni.c" app/src/main/jni/hev-socks5-tunnel/src/hev-jni.c
 
       - name: Build native lib (ndk-build)
         run: |
