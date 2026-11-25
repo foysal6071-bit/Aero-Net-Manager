@@ -1,3 +1,4 @@
+
 name: Unzip, Build & Release APK
 on:
   push:
@@ -15,10 +16,18 @@ jobs:
 
       - name: Unzip project
         run: |
-          mkdir -p work
-          unzip -q -o NetThrottle.zip -d work
-          # find the folder that contains settings.gradle.kts
-          SRC=$(dirname "$(find work -name settings.gradle.kts | head -n1)")
+          ZIP=$(find . -maxdepth 2 -iname "*.zip" | head -n1)
+          echo "Found zip: $ZIP"
+          ls -la
+          if [ -n "$ZIP" ]; then
+            mkdir -p work
+            unzip -q -o "$ZIP" -d work
+            SRC=$(dirname "$(find work -name settings.gradle.kts | head -n1)")
+          elif [ -f settings.gradle.kts ]; then
+            SRC=.
+          else
+            echo "No zip file or project found in repo" && exit 1
+          fi
           echo "PROJECT_DIR=$SRC" >> $GITHUB_ENV
 
       - uses: actions/setup-java@v4
@@ -28,6 +37,7 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           git clone --recursive --depth 1 https://github.com/heiher/hev-socks5-tunnel app/src/main/jni/hev-socks5-tunnel
+          grep -n "LOCAL_MODULE\|BUILD_" app/src/main/jni/hev-socks5-tunnel/Android.mk || true
           grep -rn "TProxyService" app/src/main/jni/hev-socks5-tunnel/src/*.c || true
           sed -i -E 's#hev/[A-Za-z0-9_/]*TProxyService#com/netthrottle/app/TProxy#g' app/src/main/jni/hev-socks5-tunnel/src/hev-jni.c
 
@@ -37,6 +47,9 @@ jobs:
       - name: Build APK
         working-directory: ${{ env.PROJECT_DIR }}
         run: gradle assembleDebug --no-daemon
+
+      - name: Check native libs in APK
+        run: unzip -l ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/app-debug.apk | grep -E '\.so' || (echo 'NO NATIVE LIB IN APK' && exit 1)
 
       - name: Rename APK
         run: cp ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/app-debug.apk NetThrottle.apk
