@@ -31,7 +31,6 @@ jobs:
           grep -rn "TProxyService" app/src/main/jni/hev-socks5-tunnel/src/*.c || true
           sed -i -E 's#hev/[A-Za-z0-9_/]*TProxyService#com/netthrottle/app/TProxy#g' app/src/main/jni/hev-socks5-tunnel/src/hev-jni.c
 
-      - uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: "8.7" }
 
