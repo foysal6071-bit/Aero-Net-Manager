@@ -47,7 +47,16 @@ jobs:
           cd $GITHUB_WORKSPACE/${{ env.PROJECT_DIR }}
           ls app/src/main/jni app/src/main/jni/hev-socks5-tunnel
           cd app/src/main/jni
-          "$NDK/ndk-build" NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./Android.mk NDK_APPLICATION_MK=./Application.mk NDK_LIBS_OUT=../jniLibs NDK_OUT=/tmp/ndkobj -j4
+          set +e
+          "$NDK/ndk-build" NDK_PROJECT_PATH=$PWD APP_BUILD_SCRIPT=$PWD/Android.mk NDK_APPLICATION_MK=$PWD/Application.mk NDK_LIBS_OUT=$PWD/../jniLibs NDK_OUT=/tmp/ndkobj -j4 > /tmp/ndk.log 2>&1
+          RC=$?
+          tail -n 40 /tmp/ndk.log
+          if [ $RC -ne 0 ]; then
+            echo "::error::ndk-build exit $RC | dir: $(ls . hev-socks5-tunnel | tr '\n' ' ')"
+            grep -iE "error|Android NDK|No rule|undefined" /tmp/ndk.log | head -n 6 | while IFS= read -r l; do echo "::error::${l:0:300}"; done
+            echo "::error::LAST: $(tail -n 3 /tmp/ndk.log | tr '\n' ' ' | cut -c1-300)"
+            exit 1
+          fi
           find ../jniLibs -name "*.so"
 
       - uses: gradle/actions/setup-gradle@v4
