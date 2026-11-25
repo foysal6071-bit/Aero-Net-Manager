@@ -1,4 +1,3 @@
-
 name: Unzip, Build & Release APK
 on:
   push:
@@ -40,6 +39,16 @@ jobs:
           grep -n "LOCAL_MODULE\|BUILD_" app/src/main/jni/hev-socks5-tunnel/Android.mk || true
           grep -rn "TProxyService" app/src/main/jni/hev-socks5-tunnel/src/*.c || true
           sed -i -E 's#hev/[A-Za-z0-9_/]*TProxyService#com/netthrottle/app/TProxy#g' app/src/main/jni/hev-socks5-tunnel/src/hev-jni.c
+
+      - name: Build native lib (ndk-build)
+        run: |
+          NDK="${ANDROID_NDK_HOME:-$ANDROID_NDK_LATEST_HOME}"
+          echo "NDK=$NDK"
+          cd $GITHUB_WORKSPACE/${{ env.PROJECT_DIR }}
+          ls app/src/main/jni app/src/main/jni/hev-socks5-tunnel
+          cd app/src/main/jni
+          "$NDK/ndk-build" NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./Android.mk NDK_APPLICATION_MK=./Application.mk NDK_LIBS_OUT=../jniLibs NDK_OUT=/tmp/ndkobj -j4
+          find ../jniLibs -name "*.so"
 
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: "8.7" }
